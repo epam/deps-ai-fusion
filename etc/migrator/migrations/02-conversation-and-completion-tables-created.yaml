@@ -1,0 +1,55 @@
+databaseChangeLog:
+- changeSet:
+    id: 1
+    author: Illia Makarov
+    changes:
+    - dropTable:
+          tableName: test
+
+      rollback:
+        - createTable:
+            columns:
+            - column:
+                constraints:
+                  primaryKey: true
+                  primaryKeyName: test_pkey
+                name: pk
+                type: VARCHAR(50)
+            - column:
+                name: name
+                type: VARCHAR(100)
+            tableName: test
+- changeSet:
+      id: 2
+      author: Illia Makarov
+      changes:
+      - createTable:
+          tableName: conversation
+          columns:
+          - column:
+              name: entity_id
+              type: VARCHAR(100)
+              constraints:
+                primaryKey: true
+          - column:
+              name: tenant_id
+              type: VARCHAR(100)
+              constraints:
+                primaryKey: true
+          - column:
+              name: user_id
+              type: VARCHAR(100)
+              constraints:
+                primaryKey: true
+          - column:
+              name: completions
+              type: JSONB
+
+      rollback:
+        - dropTable:
+            tableName: conversation
+- changeSet:
+      id: 3
+      author: Illia Makarov
+      changes:
+        sql: CREATE INDEX completion_created_at ON conversation USING GIN ((completions -> 'created_at'));

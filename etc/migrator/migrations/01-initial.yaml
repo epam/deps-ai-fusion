@@ -1,0 +1,17 @@
+databaseChangeLog:
+- changeSet:
+    id: 1
+    author: Deps Service Generator
+    changes:
+    - createTable:
+        columns:
+        - column:
+            constraints:
+              primaryKey: true
+              primaryKeyName: test_pkey
+            name: pk
+            type: VARCHAR(50)
+        - column:
+            name: name
+            type: VARCHAR(100)
+        tableName: test

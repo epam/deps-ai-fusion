@@ -1,0 +1,95 @@
+{{- if .Values.vault_settings.hashicorp_vault }}
+apiVersion: secrets-store.csi.x-k8s.io/v1
+kind: SecretProviderClass
+metadata:
+  name: {{ .Values.csi.csi_default_name }}
+spec:
+  provider: vault
+  secretObjects:
+  - data:
+    - key: app-secret-key
+      objectName: app-secret-key
+    - key: keycloak-certs-endpoint
+      objectName: keycloak-certs-endpoint
+    - key: message-broker-driver
+      objectName: message-broker-driver
+    - key: message-broker-connection-string
+      objectName: message-broker-connection-string
+    - key: database-host
+      objectName: database-host
+    - key: database-db
+      objectName: database-db
+    - key: user
+      objectName: user
+    - key: password
+      objectName: password
+    - key: epam-dial-api-key
+      objectName: epam-dial-api-key
+    - key: azure-api-key
+      objectName: azure-api-key
+    - key: openai-api-key
+      objectName: openai-api-key
+    - key: google-api-key
+      objectName: google-api-key
+    - key: aws-bedrock-api-key
+      objectName: aws-bedrock-api-key
+    - key: aws-bedrock-access-key-id
+      objectName: aws-bedrock-access-key-id
+    - key: aws-bedrock-region
+      objectName: aws-bedrock-region
+    secretName: {{ .Values.secrets.deps_ai_fusion.secretName }}
+    type: Opaque
+  parameters:
+    roleName: "{{ .Values.csi.roleName }}"
+    vaultAddress: "https://vault_address"
+    vaultNamespace: "vault_namespace"
+    vaultSkipTLSVerify: "true"
+    #vaultCACertPath: ""
+    vaultKubernetesMountPath: {{ .Values.csi.vaultKubernetesMountPath }}
+    objects: |
+      - objectName: "epam-dial-api-key"
+        secretPath: "{{ .Values.csi.vault_namespace }}/data/deps-ai-fusion/epam-dial-api-key"
+        secretKey: "epam-dial-api-key"
+      - objectName: "azure-api-key"
+        secretPath: "{{ .Values.csi.vault_namespace }}/data/deps-ai-fusion/azure-api-key"
+        secretKey: "azure-api-key"
+      - objectName: "openai-api-key"
+        secretPath: "{{ .Values.csi.vault_namespace }}/data/deps-ai-fusion/openai-api-key"
+        secretKey: "openai-api-key"
+      - objectName: "google-api-key"
+        secretPath: "{{ .Values.csi.vault_namespace }}/data/deps-ai-fusion/google-api-key"
+        secretKey: "google-api-key"
+      - objectName: "aws-bedrock-api-key"
+        secretPath: "{{ .Values.csi.vault_namespace }}/data/deps-ai-fusion/aws-bedrock-api-key"
+        secretKey: "aws-bedrock-api-key"
+      - objectName: "aws-bedrock-access-key-id"
+        secretPath: "{{ .Values.csi.vault_namespace }}/data/deps-ai-fusion/aws-bedrock-access-key-id"
+        secretKey: "aws-bedrock-access-key-id"
+      - objectName: "aws-bedrock-region"
+        secretPath: "{{ .Values.csi.vault_namespace }}/data/deps-ai-fusion/aws-bedrock-region"
+        secretKey: "aws-bedrock-region"
+      - objectName: "app-secret-key"
+        secretPath: "{{ .Values.csi.vault_namespace }}/data/deps-ai-fusion/app-secret-key"
+        secretKey: "app-secret-key"
+      - objectName: "keycloak-certs-endpoint"
+        secretPath: "{{ .Values.csi.vault_namespace }}/data/common-secret"
+        secretKey: "keycloak-certs-endpoint"
+      - objectName: "message-broker-driver"
+        secretPath: "{{ .Values.csi.vault_namespace }}/data/common-secret"
+        secretKey: "message-broker-driver"
+      - objectName: "message-broker-connection-string"
+        secretPath: "{{ .Values.csi.vault_namespace }}/data/common-secret"
+        secretKey: "message-broker-connection-string"
+      - objectName: "database-host"
+        secretPath: "{{ .Values.csi.vault_namespace }}/data/common-secret"
+        secretKey: "database-host"
+      - objectName: "database-db"
+        secretPath: "{{ .Values.csi.vault_namespace }}/data/deps-ai-fusion/ai-fusion-database"
+        secretKey: "database-db"
+      - objectName: "user"
+        secretPath: "{{ .Values.csi.vault_namespace }}/data/deps-ai-fusion/ai-fusion-database"
+        secretKey: "user"
+      - objectName: "password"
+        secretPath: "{{ .Values.csi.vault_namespace }}/data/deps-ai-fusion/ai-fusion-database"
+        secretKey: "password"
+{{- end }}

@@ -1,0 +1,15 @@
+databaseChangeLog:
+  - include:
+      file: ./migrations/01-initial.yaml
+  - include:
+      file: ./migrations/02-conversation-and-completion-tables-created.yaml
+  - include:
+      file: ./migrations/03-add-llm-extractor-table.yaml
+  - include:
+      file: ./migrations/04-add-prompts-to-llm-extractor-table.yaml
+  - include:
+      file: ./migrations/05-add-saga-table.yaml
+  - include:
+      file: ./migrations/06-move-prompts-to-queries.yaml
+  - include:
+      file: ./migrations/07-add-insights-table.yaml

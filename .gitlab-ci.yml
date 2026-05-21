@@ -1,0 +1,23 @@
+include:
+  - project: 'epm-deps/deps-pipelines'
+    ref: 0.8.6
+    file: '/shared/python.gitlab-ci.yml'
+
+stages:
+  - build
+  - tests
+  - deploy
+
+ci:
+  artifacts:
+    reports:
+      coverage_report:
+        coverage_format: cobertura
+        path: src/tests/coverage.xml
+
+helmlint:
+  script:
+    - helm lint .helm/services
+    - helm lint .helm/migrator
+    - helm template $CI_PROJECT_NAME .helm/services --output-dir chart
+    - helm template $CI_PROJECT_NAME .helm/migrator --output-dir chart

@@ -1,0 +1,113 @@
+{{- if .Values.vault_settings.azure_key_vault }}
+apiVersion: secrets-store.csi.x-k8s.io/v1
+kind: SecretProviderClass
+metadata:
+  name: {{ .Values.csi.csi_default_name }}
+spec:
+  provider: azure
+  secretObjects:
+  - data:
+    - key: app-secret-key
+      objectName: app-secret-key
+    - key: password
+      objectName: ai-fusion-db-password
+    - key: user
+      objectName: ai-fusion-db-user
+    - key: database-host
+      objectName: db-host
+    - key: database-db
+      objectName: ai-fusion-db
+    - key: message-broker-driver
+      objectName: message-broker-driver
+    - key: message-broker-connection-string
+      objectName: message-broker-connection-string
+    - key: keycloak-certs-endpoint
+      objectName: keycloak-certs-endpoint
+    - key: epam-dial-api-key
+      objectName: epam-dial-api-key
+    - key: azure-api-key
+      objectName: azure-api-key
+    - key: openai-api-key
+      objectName: openai-api-key
+    - key: google-api-key
+      objectName: google-api-key
+    - key: aws-bedrock-api-key
+      objectName: aws-bedrock-api-key
+    - key: aws-bedrock-access-key-id
+      objectName: aws-bedrock-access-key-id
+    - key: aws-bedrock-region
+      objectName: aws-bedrock-region      
+    secretName: {{ .Values.secrets.deps_ai_fusion.secretName }}
+    type: Opaque
+  parameters:
+    keyvaultName: {{ .Values.azure_kv_settings.keyvaultName }}
+    tenantId: {{ .Values.azure_kv_settings.tenantId }}
+    vaultKubernetesMountPath: {{ .Values.csi.vaultKubernetesMountPath }}
+    usePodIdentity: "false"
+    useVMManagedIdentity: "true"
+    userAssignedIdentityID: {{ .Values.azure_kv_settings.userAssignedIdentityID }}
+    resourceGroup:  {{ .Values.azure_kv_settings.resourceGroup }}
+    subscriptionId: {{ .Values.azure_kv_settings.subscriptionId }}
+    objects: |
+      array:
+        - |
+          objectName: "aws-bedrock-region"
+          objectType: secret
+    
+        - |
+          objectName: "aws-bedrock-api-key"
+          objectType: secret
+
+        - |
+          objectName: "aws-bedrock-access-key-id"
+          objectType: secret
+
+
+        - |
+          objectName: "openai-api-key"
+          objectType: secret
+
+        - |
+          objectName: "google-api-key"
+          objectType: secret
+
+        - |
+          objectName: "epam-dial-api-key"
+          objectType: secret
+
+        - |
+          objectName: "azure-api-key"
+          objectType: secret
+
+        - |
+          objectName: "keycloak-certs-endpoint"
+          objectType: secret
+
+        - |
+          objectName: "app-secret-key"
+          objectType: secret
+
+        - |
+          objectName: "db-host"
+          objectType: secret
+
+        - |
+          objectName: "ai-fusion-db"
+          objectType: secret
+
+        - |
+          objectName: "ai-fusion-db-password"
+          objectType: secret
+
+        - |
+          objectName: "ai-fusion-db-user"
+          objectType: secret
+
+        - |
+          objectName: "message-broker-connection-string"
+          objectType: secret
+
+        - |
+          objectName: "message-broker-driver"
+          objectType: secret
+{{- end }}

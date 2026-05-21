@@ -1,0 +1,101 @@
+services:
+  api:
+    build:
+      context: .
+      dockerfile: ./etc/ai-fusion/Dockerfile
+      target: develop
+      args:
+        REPOSITORY_URL: "${REPOSITORY_URL}"
+      cache_from:
+        - "ai-fusion-dev:latest"
+    env_file:
+      - ./etc/ai-fusion/env/.dev.env
+      - .env
+    networks:
+      - deps-network
+    volumes:
+      - ./src/deps_ai_fusion:/app/deps_ai_fusion
+      - ./src/tests:/app/tests
+      - ./src/poetry.lock:/app/poetry.lock
+      - ./src/pyproject.toml:/app/pyproject.toml
+      - ./vendors:/vendors
+      - ./src/setup.cfg:/app/setup.cfg
+    ports:
+      - "12753:8000"
+    environment:
+      WDB_SOCKET_SERVER: wdb
+      WDB_NO_BROWSER_AUTO_OPEN: "true"
+    stdin_open: true
+    tty: true
+
+  agent:
+    build:
+      context: .
+      dockerfile: ./etc/ai-fusion/Dockerfile
+      target: develop
+      args:
+        REPOSITORY_URL: "${REPOSITORY_URL}"
+      cache_from:
+        - "ai-fusion-dev:latest"
+    env_file:
+      - ./etc/ai-fusion/env/.dev.env
+      - .env
+    networks:
+      - deps-network
+    volumes:
+      - ./src/deps_ai_fusion:/app/deps_ai_fusion
+      - ./src/tests:/app/tests
+      - ./src/poetry.lock:/app/poetry.lock
+      - ./src/pyproject.toml:/app/pyproject.toml
+      - ./vendors:/vendors
+      - ./src/setup.cfg:/app/setup.cfg
+    ports:
+      - "12754:8000"
+    environment:
+      WDB_SOCKET_SERVER: wdb
+      WDB_NO_BROWSER_AUTO_OPEN: "true"
+    stdin_open: true
+    tty: true
+
+  consumer:
+    build:
+      context: .
+      dockerfile: ./etc/ai-fusion/Dockerfile
+      target: develop
+      args:
+        REPOSITORY_URL: "${REPOSITORY_URL}"
+      cache_from:
+        - "ai-fusion-dev:latest"
+    env_file:
+      - ./etc/ai-fusion/env/.dev.env
+      - .env
+    networks:
+      - deps-network
+    volumes:
+      - ./src/deps_ai_fusion:/app/deps_ai_fusion
+      - ./src/poetry.lock:/app/poetry.lock
+      - ./src/pyproject.toml:/app/pyproject.toml
+      - ./vendors:/vendors
+    environment:
+        WDB_SOCKET_SERVER: wdb
+        WDB_NO_BROWSER_AUTO_OPEN: "True"
+    stdin_open: true
+    tty: true
+
+  migrator:
+    build:
+      context: .
+      dockerfile: ./etc/migrator/Dockerfile
+      args:
+        REPOSITORY_URL: "${REPOSITORY_URL}"
+      cache_from:
+        - "ai-fusion-migrator:latest"
+    env_file: ./etc/migrator/env/.dev.env
+    networks:
+      - deps-network
+    volumes:
+      - ./etc/migrator/migrations:/app/migrations
+
+networks:
+  deps-network:
+    external: True

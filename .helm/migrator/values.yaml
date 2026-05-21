@@ -1,0 +1,123 @@
+secrets:
+  deps_ai_fusion_migrator:
+    secretName: deps-ai-fusion-migrator
+  ai_fusion_database:
+    secretName: ai-fusion-database
+  database_ssl_secret:
+    secretName: database-ssl-secret
+
+helm_logs_job:
+  serviceAccountName: gitlab-ci
+  image:
+    path: "/base/kubernetes-helm"
+    pullPolicy: IfNotPresent
+    tag: "0.1.1"
+  resources: {}
+
+registry: ""
+env: ""
+
+migrator:
+  image:
+    path: "/deps-dev-x01/deps-ai-fusion-migrator"
+    pullPolicy: IfNotPresent
+    tag: ""
+  imagePullSecrets: artifactory
+  resources: {}
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
+  args: ''
+
+migration_settings:
+  DATABASE_PORT: '5432'
+  DATABASE_DRIVER: psycopg2
+  DATABASE_DIALECT: postgresql
+  DATABASE_REQUIRE_SECURE_TRANSPORT: false
+  DATABASE_SSLKEY_PATH: '/home/dbcerts/tls.key'
+  DATABASE_SSLCERT_PATH: '/home/dbcerts/tls.crt'
+  DATABASE_SSLROOTCERT_PATH: '/home/dbcerts/root.crt'
+
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 1000
+  runAsGroup: 1000
+
+helm:
+  enabled: false
+
+csi:
+  csi_default_name: deps-ai-fusion-migrator
+  vault_namespace: 'k8s-dev'
+  roleName: 'k8s-dev'
+  vaultKubernetesMountPath: 'kubernetes-dev'
+
+secrets_location:
+  secrets_default_path: "/mnt/secrets-store"
+
+service_account:
+  serviceAccountName: 'deps-develop'
+
+secret_project_id:
+  id: ""
+
+azure_kv_settings:
+  keyvaultName: ""
+  tenantId: ""
+  userAssignedIdentityID: ""
+  resourceGroup: ""
+  subscriptionId: ""
+
+vault_settings:
+  enabled: false
+  hashicorp_vault: false
+  azure_key_vault: false
+  gcp_secret_manager: false
+  aws_secret_manager: false
+  aws_secret_manager_region: ''
+
+migrator_vault_enabled:
+  env:
+    - name: DATABASE_HOST
+      valueFrom:
+        secretKeyRef:
+          name: deps-ai-fusion-migrator
+          key: database-host
+    - name: DATABASE_USER
+      valueFrom:
+        secretKeyRef:
+          name: deps-ai-fusion-migrator
+          key: user
+    - name: DATABASE_PASSWORD
+      valueFrom:
+        secretKeyRef:
+          name: deps-ai-fusion-migrator
+          key: password
+    - name: DATABASE_DB
+      valueFrom:
+        secretKeyRef:
+          name: deps-ai-fusion-migrator
+          key: database-db
+
+migrator_vault_disabled:
+  env:
+    - name: DATABASE_HOST
+      valueFrom:
+        secretKeyRef:
+          name: common-secret
+          key: database-host
+    - name: DATABASE_USER
+      valueFrom:
+        secretKeyRef:
+          name: ai-fusion-database
+          key: user
+    - name: DATABASE_PASSWORD
+      valueFrom:
+        secretKeyRef:
+          name: ai-fusion-database
+          key: password
+    - name: DATABASE_DB
+      valueFrom:
+        secretKeyRef:
+          name: ai-fusion-database
+          key: database-db

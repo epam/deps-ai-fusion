@@ -1,0 +1,93 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: ai-fusion-migrator
+  labels:
+    {{- include "deps-ai-fusion-migrator.labels" . | nindent 4 }}
+  annotations:
+    "helm.sh/hook": pre-install,pre-upgrade
+    "helm.sh/hook-weight": "4"
+spec:
+  template:
+    spec:
+      {{- if .Values.podSecurityContext.runAsNonRoot }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      {{- end }}
+      {{- if or .Values.vault_settings.hashicorp_vault .Values.vault_settings.gcp_secret_manager .Values.vault_settings.aws_secret_manager }}
+      serviceAccountName: {{ .Values.service_account.serviceAccountName }}
+      {{- end }}
+      {{- if .Values.migration_settings.DATABASE_REQUIRE_SECURE_TRANSPORT }}
+      initContainers:
+        - name: init-ai-fusion-migrator
+          image: busybox
+          command: ["sh", "-c", "cp /home/inputdbcerts/* /home/outputdbcerts/ && chmod g-r /home/outputdbcerts/*.key"]
+          volumeMounts:
+            - name: tls-database-certs
+              mountPath: /home/inputdbcerts
+            - name: outputdbcerts
+              mountPath: /home/outputdbcerts
+      {{- end }}
+      containers:
+      - name: ai-fusion-migrator
+        image: '{{ .Values.registry }}{{ .Values.migrator.image.path }}:{{ .Values.migrator.image.tag | default "latest" }}'
+        imagePullPolicy: {{ .Values.migrator.image.pullPolicy }}
+        resources:
+          {{- toYaml .Values.migrator.resources | nindent 10 }}
+        envFrom:
+          - configMapRef:
+              name: ai-fusion-migrator-configmap
+        env:
+          - name: MASTER_CHANGELOG
+            value: "./migrations/master.yaml"
+          {{- if .Values.vault_settings.enabled }}
+          {{- toYaml .Values.migrator_vault_enabled.env | nindent 10 }}
+          {{- else }}
+          {{- toYaml .Values.migrator_vault_disabled.env | nindent 10 }}
+          {{- end }}
+        volumeMounts:
+          {{- if .Values.migration_settings.DATABASE_REQUIRE_SECURE_TRANSPORT }}
+          - name: outputdbcerts
+            mountPath: {{ .Values.certs_location.database_sslcerts_path }}
+          {{- end }}
+          {{- if .Values.vault_settings.enabled }}
+          - name: secrets-store-inline
+            mountPath: {{ .Values.secrets_location.secrets_default_path }}
+            readOnly: true
+          {{- end }}
+        {{- if .Values.migrator.args }}
+        args:
+          {{- range (split " " .Values.migrator.args) }}
+          - {{ . }}
+          {{- end }}
+        {{- end }}
+      volumes:
+        {{- if .Values.migration_settings.DATABASE_REQUIRE_SECURE_TRANSPORT }}
+        - name: tls-database-certs
+          secret:
+            secretName: {{ .Values.secrets.database_ssl_secret.secretName }}
+            items:
+            - key: tls.crt
+              path: tls.crt
+            - key: tls.key
+              path: tls.key
+              mode: 0600
+            - key: root.crt
+              path: root.crt
+            defaultMode: 0644
+        - name: outputdbcerts
+          emptyDir: {}
+        {{- end }}
+        {{- if .Values.vault_settings.enabled }}
+        - name: secrets-store-inline
+          csi:
+            driver: secrets-store.csi.k8s.io
+            readOnly: true
+            volumeAttributes:
+              secretProviderClass: {{ .Values.csi.csi_default_name }}
+        {{- end }}
+      restartPolicy: Never
+      {{- if .Values.migrator.imagePullSecrets }}
+      imagePullSecrets:
+        - name: {{ .Values.migrator.imagePullSecrets }}
+      {{- end }}

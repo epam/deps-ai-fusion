@@ -1,0 +1,44 @@
+ai_fusion:
+  replicaCount: 3
+  image:
+    path: "/deps-platform/deps-ai-fusion"
+  resources: {}
+
+
+ai_fusion_settings:
+  ENV: ins
+
+  LOG_LEVEL: "INFO"
+
+  DATABASE_REQUIRE_SECURE_TRANSPORT: false
+  SUPPORTED_PROVIDERS: '["dial", "azure", "openai", "google", "aws-bedrock"]'
+
+migration_settings:
+  DATABASE_REQUIRE_SECURE_TRANSPORT: false
+
+ai_fusion_consumer:
+  replicaCount: 2
+  image:
+    path: "/deps-platform/deps-ai-fusion"
+
+ai_fusion_agent:
+  image:
+    path: "/deps-platform/deps-ai-fusion"
+
+
+migrator:
+  image:
+    path: "/deps-platform/deps-ai-fusion-migrator"
+
+
+helm:
+  helm_logs_job_enabled: false
+
+
+csi:
+  vault_namespace: 'k8s-ins'
+  roleName: 'k8s-ins'
+  vaultKubernetesMountPath: 'kubernetes-ins'
+
+service_account:
+  serviceAccountName: 'deps-insurance'

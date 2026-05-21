@@ -1,0 +1,58 @@
+databaseChangeLog:
+
+- changeSet:
+    id: 1
+    author: Siarhei Shveadko
+    changes:
+    - createTable:
+        tableName: saga
+        columns:
+        - column:
+            name: saga_id
+            type: VARCHAR
+            constraints:
+              primaryKey: true
+        - column:
+            name: saga_type
+            type: VARCHAR
+            constraints:
+              nullable: false
+        - column:
+            name: state_name
+            type: VARCHAR
+            constraints:
+              nullable: false
+        - column:
+            name: last_request_id
+            type: VARCHAR
+            constraints:
+              nullable: false
+        - column:
+            name: saga_data_type
+            type: VARCHAR
+            constraints:
+              nullable: false
+        - column:
+            name: saga_data_json
+            type: VARCHAR
+            constraints:
+              nullable: false
+        - column:
+            name: end_state
+            type: BOOL
+            constraints:
+              nullable: false
+        - column:
+            name: compensating
+            type: BOOL
+            constraints:
+              nullable: false
+        - column:
+            name: failed
+            type: BOOL
+            constraints:
+              nullable: false
+
+    rollback:
+    - dropTable:
+        tableName: saga

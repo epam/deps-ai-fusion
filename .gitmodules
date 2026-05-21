@@ -1,0 +1,15 @@
+[submodule "vendors/deps-pipelines"]
+	path = vendors/deps-pipelines
+	url = git@github.com:epam/deps-pipelines.git
+[submodule "vendors/deps-gen-ai"]
+	path = vendors/deps-gen-ai
+	url = git@github.com:epam/deps-gen-ai.git
+[submodule "vendors/deps-observability-instrumentation"]
+	path = vendors/deps-observability-instrumentation
+	url = git@github.com:epam/deps-observability-instrumentation.git
+[submodule "vendors/deps-extracted-data"]
+	path = vendors/deps-extracted-data
+	url = git@github.com:epam/deps-extracted-data.git
+[submodule "vendors/deps-message-flow"]
+	path = vendors/deps-message-flow
+	url = git@github.com:epam/deps-message-flow.git

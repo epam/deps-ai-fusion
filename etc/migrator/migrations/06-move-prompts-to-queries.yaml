@@ -1,0 +1,142 @@
+databaseChangeLog:
+- changeSet:
+      id: 1
+      author: Siarhei Shveadko
+      changes:
+      - addColumn:
+          tableName: llm_extractor
+          columns:
+          - column:
+              name: queries
+              type: JSONB
+              defaultValueComputed: "'{}'::jsonb"
+              constraints:
+                nullable: false
+          - column:
+              name: llm_reference
+              type: JSONB
+              defaultValueComputed: "'{}'::jsonb"
+              constraints:
+                nullable: false
+
+      rollback:
+        - dropColumn:
+            columnName: queries
+            tableName: llm_extractor
+        - dropColumn:
+            columnName: llm_reference
+            tableName: llm_extractor
+
+- changeSet:
+    id: 2
+    author: Siarhei Shveadko
+    changes:
+      - sql:
+          splitStatements: true
+          stripComments: true
+          sql: |
+            -- Step 1: Move provider and model into llm_reference column
+            UPDATE llm_extractor
+            SET
+              llm_reference = jsonb_build_object(
+                'provider', provider,
+                'model', model
+              );
+
+            -- Step 2: Move prompts into queries
+            UPDATE llm_extractor
+            SET queries = COALESCE((
+              SELECT jsonb_object_agg(
+                kv.key,
+                jsonb_build_object(
+                  'code', kv.value->>'code',
+                  'shape', jsonb_build_object(
+                    'data_type', kv.value->>'data_type',
+                    'cardinality', 'scalar',
+                    'include_aliases', false
+                  ),
+                  'workflow', jsonb_build_object(
+                    'entrypoint_node_id', node_id,
+                    'output_node_id', node_id,
+                    'nodes', jsonb_build_array(
+                      jsonb_build_object(
+                        'id', node_id,
+                        'name', 'DefaultNodeName',
+                        'prompt', kv.value->>'prompt'
+                      )
+                    ),
+                    'edges', jsonb_build_array(
+                    )
+                  )
+                )
+              )
+              FROM (
+                SELECT key, value, gen_random_uuid() AS node_id
+                FROM jsonb_each(prompts)
+              ) AS kv
+            ), '{}'::jsonb);
+            
+    rollback:
+      - sql:
+          splitStatements: true
+          stripComments: true
+          sql: |
+            -- Restore prompts from queries
+            UPDATE llm_extractor
+            SET prompts = COALESCE((
+              SELECT jsonb_object_agg(
+                kv.key,
+                jsonb_build_object(
+                  'code', kv.value->>'code',
+                  'prompt', kv.value->'workflow'->'nodes'->0->>'prompt',
+                  'data_type', kv.value->'shape'->>'data_type'
+                )
+              )
+              FROM jsonb_each(queries) AS kv
+            ), '{}'::jsonb);
+
+
+- changeSet:
+    id: 3
+    author: Siarhei Shveadko
+    changes:
+    - dropColumn:
+        columnName: provider
+        tableName: llm_extractor
+    - dropColumn:
+        columnName: model
+        tableName: llm_extractor
+    - dropColumn:
+        columnName: prompts
+        tableName: llm_extractor
+
+    rollback:
+    - addColumn:
+          tableName: llm_extractor
+          columns:
+          - column:
+              name: provider
+              type: VARCHAR
+          - column:
+              name: model
+              type: VARCHAR
+          - column:
+              name: prompts
+              type: JSONB
+              defaultValueComputed: "'{}'::jsonb"
+              constraints:
+                nullable: false
+    - sql:
+        splitStatements: true
+        stripComments: true
+        sql: |
+          -- Restore provider and model columns
+          UPDATE llm_extractor
+          SET provider = llm_reference->>'provider',
+              model = llm_reference->>'model';
+    - addNotNullConstraint:
+        tableName: llm_extractor
+        columnName: provider
+    - addNotNullConstraint:
+        tableName: llm_extractor
+        columnName: model

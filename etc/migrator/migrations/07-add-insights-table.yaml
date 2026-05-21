@@ -1,0 +1,27 @@
+databaseChangeLog:
+- changeSet:
+    id: 1
+    author: Illia Makarov
+    changes:
+    - createTable:
+        tableName: insights
+        columns:
+        - column:
+            name: conversation_id
+            type: VARCHAR(100)
+            constraints:
+              primaryKey: true
+        - column:
+            name: tenant_id
+            type: VARCHAR(100)
+            constraints:
+              primaryKey: true
+        - column:
+            name: insights
+            type: JSONB
+            constraints:
+              nullable: false
+
+    rollback:
+      - dropTable:
+          tableName: insights

@@ -1,0 +1,64 @@
+[tool.poetry]
+name = "deps_ai_fusion"
+version = "0.1.0"
+description = "A unified interface over multiple LLM providers and LLM-based applications, streamlining integration and interaction within DEPS."
+authors = []
+
+[tool.poetry.dependencies]
+python = ">=3.12,<4.0"
+dependency-injector = ">=4.41.0,<5.0.0"
+pydantic = "^2"
+pydantic-settings = "^2"
+fastapi = "^0.120"
+SQLAlchemy = "^2"
+
+click = "^8.1.3"
+psycopg2-binary = "^2.9.5"
+uvicorn = "^0.18.3"
+
+deps-gen-ai = { path = "../vendors/deps-gen-ai", extras = ["deps-dial", "deps-azure", "deps-openai", "deps-google", "deps-aws-bedrock"], develop = true }
+deps-message-flow = { path = "../vendors/deps-message-flow/src", extras = ["deps-asb", "deps-kafka", "deps-rabbitmq"], develop = true }
+deps-observability-instrumentation = { path = "../vendors/deps-observability-instrumentation", develop = true }
+deps-extracted-data = { path = "../vendors/deps-extracted-data", develop = true }
+sse-starlette = "^3.0.2"
+langgraph = "^0.6.11"
+langgraph-checkpoint = "^3.0.0"
+langgraph-checkpoint-postgres = "^3.0.0"
+wemake-python-styleguide = "1.4.0"
+
+[tool.poetry.group.dev.dependencies]
+types-requests = "^2.28"
+pytest = "^7.1.3"
+factory-boy = "^3.2.1"
+pytest-factoryboy = "2.1.0"
+pytest-faker = "^2.0.0"
+pytest-mock = "^3.6.0"
+pytest-pylint = "~0.21.0"
+pytest-flake8 = "~1.0.4"
+Faker = "^12.0.0"
+mypy = "^1.10"
+isort = "~5.6.4"
+black = "^22.8.0"
+coverage = "^5.5"
+wemake-python-styleguide = "~1.4.0"
+
+ipdb = "^0.13.9"
+see = "^1.4.1"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.isort]
+profile = "black"
+
+[tool.black]
+line-length = 120
+target-version = ['py311']
+exclude = '''
+(
+    .venv
+    | vendors
+    | query_factory.py
+)
+'''

@@ -1,0 +1,19 @@
+databaseChangeLog:
+- changeSet:
+      id: 1
+      author: Oleksandr Rez
+      changes:
+      - addColumn:
+          tableName: llm_extractor
+          columns:
+          - column:
+              name: prompts
+              type: JSONB
+              defaultValueComputed: "'{}'::jsonb"
+              constraints:
+                nullable: false
+
+      rollback:
+        - dropColumn:
+            columnName: prompts
+            tableName: llm_extractor

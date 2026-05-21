@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: ai-fusion-agent
+  labels:
+    {{- include "deps-ai-fusion.labels" . | nindent 4 }}
+    app.kubernetes.io/component: ai-fusion-agent
+spec:
+  type: {{ .Values.ai_fusion_agent.service.type }}
+  ports:
+    - port: {{ .Values.ai_fusion_agent.service.port }}
+      targetPort: http
+      protocol: TCP
+      name: http
+  selector:
+    {{- include "deps-ai-fusion.selectorLabels" . | nindent 4 }}
+    app.kubernetes.io/component: ai-fusion-agent

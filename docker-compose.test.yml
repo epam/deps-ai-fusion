@@ -1,0 +1,50 @@
+version: "3.4"
+
+services:
+  api:
+    env_file: ./etc/ai-fusion/env/.test.env
+    depends_on:
+      - test-database
+      - test-rabbitmq
+    volumes:
+      - test-cache:/tmp/test_cache
+      - ./src/deps_ai_fusion:/app/deps_ai_fusion
+      - ./src/tests:/app/tests
+      - ./src/poetry.lock:/app/poetry.lock
+      - ./src/pyproject.toml:/app/pyproject.toml
+      - ./src/setup.cfg:/app/setup.cfg
+      - ./vendors:/vendors
+
+  migrator:
+    env_file: ./etc/migrator/env/.test.env
+    volumes:
+      - ./etc/migrator/migrations:/app/migrations
+    depends_on:
+      - test-database
+
+  test-database:
+    image: postgres:17.5
+    environment:
+      - POSTGRES_HOST=test-database
+      - POSTGRES_PORT=5432
+      - POSTGRES_DB=test_deps
+      - POSTGRES_USER=deps-postgres
+      - POSTGRES_PASSWORD=deps-postgres-password
+
+  test-rabbitmq:
+    image: "${REPOSITORY_URL}/base/rabbitmq:3.7.8-management-alpine"
+    environment:
+      - RABBITMQ_HOST=test-rabbitmq
+      - RABBITMQ_PORT=5672
+      - RABBITMQ_DEFAULT_VHOST=test_deps
+      - RABBITMQ_DEFAULT_USER=deps-rabbitmq
+      - RABBITMQ_DEFAULT_PASS=deps-rabbitmq-password
+      - RABBITMQ_VHOST=test_deps
+      - RABBITMQ_USER=deps-rabbitmq
+      - RABBITMQ_PASS=deps-rabbitmq-password
+    volumes:
+      - test-rabbitmq:/var/lib/rabbitmq
+
+volumes:
+  test-rabbitmq:
+  test-cache:

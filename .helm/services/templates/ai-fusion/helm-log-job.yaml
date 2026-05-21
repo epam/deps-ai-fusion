@@ -1,0 +1,46 @@
+{{- if .Values.helm.helm_logs_job_enabled }}
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: "helm-release-logs-{{ .Chart.Name }}"
+  annotations:
+    "helm.sh/hook": pre-delete,pre-rollback,post-upgrade
+    "helm.sh/resource-policy": keep
+  labels:
+    {{- include "deps-ai-fusion.labels" . | nindent 4 }}
+    helm-job: "logs"
+spec:
+  activeDeadlineSeconds: 120
+  ttlSecondsAfterFinished: 120
+  backoffLimit: 3
+  template:
+    metadata:
+      name: "helm-release-logs-{{ .Chart.Name }}"
+      labels:
+        {{- include "deps-ai-fusion.labels" . | nindent 8 }}
+        helm-job: "logs"
+    spec:
+      {{- if .Values.ai_fusion.imagePullSecrets }}
+      imagePullSecrets:
+        - name: {{ .Values.ai_fusion.imagePullSecrets }}
+      {{- end }}
+      restartPolicy: Never
+      serviceAccountName: {{ .Values.helm_logs_job.serviceAccountName }}
+      containers:
+      - name: helmlogs
+        image: "{{ .Values.registry }}{{ .Values.helm_logs_job.image.path }}:{{ .Values.helm_logs_job.image.tag | default .Chart.AppVersion }}"
+        imagePullPolicy: Always
+        resources:
+          {{- toYaml .Values.helm_logs_job.resources | nindent 10 }}
+        command:
+        - /usr/local/bin/kubelogin.sh
+        args:
+        - /usr/local/bin/hooklog.sh
+        - {{ .Release.Namespace }}
+        - app.kubernetes.io/instance={{ .Release.Name}}
+        env:
+        - name: K8S_CLUSTER_NAME
+          value: local
+        - name: K8S_API_URL
+          value: "https://kubernetes.default.svc"
+{{- end }}

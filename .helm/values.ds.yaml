@@ -1,0 +1,41 @@
+ai_fusion:
+  image:
+    path: "/deps-platform/deps-ai-fusion"
+  resources: {}
+
+
+ai_fusion_settings:
+  ENV: ds
+
+  LOG_LEVEL: "INFO"
+
+  DATABASE_REQUIRE_SECURE_TRANSPORT: false
+
+
+migration_settings:
+  DATABASE_REQUIRE_SECURE_TRANSPORT: false
+
+ai_fusion_consumer:
+  image:
+    path: "/deps-platform/deps-ai-fusion"
+
+ai_fusion_agent:
+  image:
+    path: "/deps-platform/deps-ai-fusion"
+
+
+migrator:
+  image:
+    path: "/deps-platform/deps-ai-fusion-migrator"
+
+
+helm:
+  helm_logs_job_enabled: false
+
+csi:
+  vault_namespace: 'k8s-ds'
+  roleName: 'k8s-ds'
+  vaultKubernetesMountPath: 'kubernetes-ds'
+
+service_account:
+  serviceAccountName: 'deps-ds'

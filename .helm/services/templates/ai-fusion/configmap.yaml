@@ -1,0 +1,78 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ai-fusion-configmap
+  labels:
+    {{- include "deps-ai-fusion.labels" . | nindent 4 }}
+data:
+  ENV: {{ .Values.ai_fusion_settings.ENV }}
+  DATABASE_PORT: '{{ .Values.ai_fusion_settings.DATABASE_PORT }}'
+  DATABASE_DIALECT: '{{ .Values.ai_fusion_settings.DATABASE_DIALECT }}'
+  DATABASE_DRIVER: '{{ .Values.ai_fusion_settings.DATABASE_DRIVER }}'
+  DATABASE_REQUIRE_SECURE_TRANSPORT: '{{ .Values.ai_fusion_settings.DATABASE_REQUIRE_SECURE_TRANSPORT }}'
+
+  {{- if .Values.ai_fusion_settings.DATABASE_REQUIRE_SECURE_TRANSPORT }}
+  DATABASE_SSLKEY: {{ .Values.migration_settings.DATABASE_SSLKEY_PATH }}
+  DATABASE_SSLCERT: {{ .Values.migration_settings.DATABASE_SSLCERT_PATH }}
+  DATABASE_SSLROOTCERT: {{ .Values.migration_settings.DATABASE_SSLROOTCERT_PATH }}
+  {{- end }}
+
+  AUTH_VERIFY_SSL: '{{ .Values.ai_fusion_settings.AUTH_VERIFY_SSL }}'
+
+  LOG_LEVEL: '{{ .Values.ai_fusion_settings.LOG_LEVEL }}'
+  DOCUMENTATION_ENABLED: '{{ .Values.ai_fusion_settings.DOCUMENTATION_ENABLED }}'
+
+  KAFKA_GROUP_ID: '{{ .Values.ai_fusion_settings.KAFKA_GROUP_ID }}'
+  KAFKA_AUTO_OFFSET_RESET: '{{ .Values.ai_fusion_settings.KAFKA_AUTO_OFFSET_RESET }}'
+
+  {{ if .Values.ai_fusion_settings.RABBITMQ_TLS_ENABLED }}
+  RABBITMQ_TLS_HOST: '{{ .Values.ai_fusion_settings.RABBITMQ_TLS_HOST }}'
+  RABBITMQ_TLS_PORT: '{{ .Values.ai_fusion_settings.RABBITMQ_TLS_PORT }}'
+  RABBITMQ_TLS_USER: '{{ .Values.ai_fusion_settings.RABBITMQ_TLS_USER }}'
+  RABBITMQ_TLS_VHOST: '{{ .Values.ai_fusion_settings.RABBITMQ_TLS_VHOST }}'
+  RABBITMQ_TLS_SUBJECT: '{{ .Values.ai_fusion_settings.RABBITMQ_TLS_SUBJECT }}'
+  RABBITMQ_TLS_CA_CERT: '{{ .Values.ai_fusion_settings.RABBITMQ_TLS_CA_CERT }}'
+  RABBITMQ_TLS_CLIENT_CERT: '{{ .Values.ai_fusion_settings.RABBITMQ_TLS_CLIENT_CERT }}'
+  RABBITMQ_TLS_CLIENT_KEY: '{{ .Values.ai_fusion_settings.RABBITMQ_TLS_CLIENT_KEY }}'
+  {{ end }}
+
+  {{ if .Values.ai_fusion_settings.KAFKA_SECURITY_ENABLED }}
+  KAFKA_SASL_MECHANISM: '{{ .Values.ai_fusion_settings.KAFKA_SASL_MECHANISM }}'
+  KAFKA_SECURITY_PROTOCOL: '{{ .Values.ai_fusion_settings.KAFKA_SECURITY_PROTOCOL }}'
+  {{ end }}
+  {{ if .Values.message_broker_asb_without_manage_permission.enabled }}
+  ASB_SUBSCRIPTION_STRATEGY: '{{ .Values.ai_fusion_settings.ASB_SUBSCRIPTION_STRATEGY }}'
+  {{ end }}
+
+  SUPPORTED_PROVIDERS: '{{ .Values.ai_fusion_settings.SUPPORTED_PROVIDERS }}'
+  DOCUMENT_SERVICE_URL: '{{ .Values.ai_fusion_settings.DOCUMENT_SERVICE_URL }}'
+  FILE_SERVICE_URL: '{{ .Values.ai_fusion_settings.FILE_SERVICE_URL }}'
+  PARSING_SERVICE_URL: '{{ .Values.ai_fusion_settings.PARSING_SERVICE_URL }}'
+  EXTRACTION_URL: '{{ .Values.ai_fusion_settings.EXTRACTION_URL }}'
+  FILE_STORAGE_URL: '{{ .Values.ai_fusion_settings.FILE_STORAGE_URL }}'
+  META_AGENT_URL: '{{ .Values.ai_fusion_settings.META_AGENT_URL }}'
+  AGENTIC_AI_URL: '{{ .Values.ai_fusion_settings.AGENTIC_AI_URL }}'
+  GENAI_QUERY_AGENT_URL: '{{ .Values.ai_fusion_settings.GENAI_QUERY_AGENT_URL }}'
+  UNIFIER_URL: '{{ .Values.ai_fusion_settings.UNIFIER_URL }}'
+
+  EPAM_DIAL_ENDPOINT: '{{ .Values.ai_fusion_settings.EPAM_DIAL_ENDPOINT }}'
+  EPAM_DIAL_API_VERSION: '{{ .Values.ai_fusion_settings.EPAM_DIAL_API_VERSION }}'
+
+  AZURE_API_ENDPOINT: '{{ .Values.ai_fusion_settings.AZURE_API_ENDPOINT }}'
+  AZURE_API_VERSION: '{{ .Values.ai_fusion_settings.AZURE_API_VERSION }}'
+
+  DEFAULT_MAX_FIELDS_PER_REQUEST: '{{ .Values.ai_fusion_settings.DEFAULT_MAX_FIELDS_PER_REQUEST }}'
+
+  AWS_BEDROCK_MAX_TOKENS: '{{ .Values.ai_fusion_settings.AWS_BEDROCK_MAX_TOKENS }}'
+
+  AGENT_PROVIDER_ID: '{{ .Values.ai_fusion_settings.AGENT_PROVIDER_ID }}'
+  AGENT_MODEL_ID: '{{ .Values.ai_fusion_settings.AGENT_MODEL_ID }}'
+
+  # Telemetry
+  INSTRUMENTATION_ENABLED: '{{ .Values.ai_fusion_settings.INSTRUMENTATION_ENABLED }}'
+  SERVICE_NAME: '{{ .Values.ai_fusion_settings.SERVICE_NAME }}'
+  EXPORTER_TYPE: '{{ .Values.ai_fusion_settings.EXPORTER_TYPE }}'
+
+  LLM_COORDINATES_ENABLED: '{{ .Values.ai_fusion_settings.LLM_COORDINATES_ENABLED }}'
+
+  LLMS_CONFIG: {{ .Values.ai_fusion_settings.LLMS_CONFIG  | quote }}

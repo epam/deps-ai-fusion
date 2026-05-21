@@ -1,0 +1,51 @@
+databaseChangeLog:
+- changeSet:
+      id: 1
+      author: Oleksandr Rez
+      changes:
+      - createTable:
+          tableName: llm_extractor
+          columns:
+          - column:
+              name: id
+              type: VARCHAR
+              constraints:
+                primaryKey: true
+          - column:
+              name: tenant_id
+              type: VARCHAR
+              constraints:
+                primaryKey: true
+          - column:
+              name: document_type_id
+              type: VARCHAR
+              constraints:
+                nullable: false
+          - column:
+              name: provider
+              type: VARCHAR
+              constraints:
+                nullable: false
+          - column:
+              name: name
+              type: VARCHAR
+              constraints:
+                nullable: false
+          - column:
+              name: model
+              type: VARCHAR
+              constraints:
+                nullable: false
+          - column:
+              name: extraction_params
+              type: JSONB
+              constraints:
+                nullable: false
+      - addUniqueConstraint:
+          columnNames: name, document_type_id
+          tableName: llm_extractor
+          constraintName: llm_extractor__name__document_type_id__ukey
+
+      rollback:
+        - dropTable:
+            tableName: llm_extractor

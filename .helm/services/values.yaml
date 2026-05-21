@@ -1,0 +1,618 @@
+secrets:
+  deps_ai_fusion:
+    secretName: deps-ai-fusion
+  app_secret_key:
+    secretName: app-secret-key
+  ai_fusion_database:
+    secretName: ai-fusion-database
+  keycloak_certs_endpoint:
+    secretName: keycloak-certs-endpoint
+  common_secret:
+    secretName: common-secret
+  rabbitmq_password:
+    secretName: rabbitmq-password
+  security_certs:
+    secretName: security-certs
+  redis_password:
+    secretName: redis-password
+  kafka_secrets:
+    secretName: kafka-secrets
+  database_ssl_secret:
+    secretName: database-ssl-secret
+  telemetry_secrets:
+    secretName: telemetry-secrets
+
+helm_logs_job:
+  serviceAccountName: gitlab-ci
+  image:
+    path: "/base/kubernetes-helm"
+    pullPolicy: IfNotPresent
+    tag: "0.1.1"
+  resources: {}
+
+registry: ""
+env: ""
+
+ai_fusion:
+  replicaCount: 1
+  image:
+    path: "/deps-dev-x01/deps-ai-fusion"
+    pullPolicy: IfNotPresent
+    tag: ""
+  imagePullSecrets: artifactory
+  service:
+    type: ClusterIP
+    port: 8000
+  resources: {}
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
+
+ai_fusion_consumer:
+  replicaCount: 1
+  image:
+    path: "/deps-dev-x01/deps-ai-fusion"
+    pullPolicy: IfNotPresent
+    tag: ""
+  imagePullSecrets: artifactory
+  resources: {}
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
+
+ai_fusion_agent:
+  replicaCount: 1
+  image:
+    path: "/deps-dev-x01/deps-ai-fusion"
+    pullPolicy: IfNotPresent
+    tag: ""
+  imagePullSecrets: artifactory
+  service:
+    type: ClusterIP
+    port: 8000
+  resources: {}
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
+
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 1000
+  runAsGroup: 1000
+
+certs_location:
+  certs_default_path: "/tmp/ssl"
+  database_sslcerts_path: "/home/dbcerts"
+
+ai_fusion_settings:
+  ENV: dev
+
+  DATABASE_PORT: "5432"
+  DATABASE_DRIVER: psycopg2
+  DATABASE_DIALECT: postgresql
+  DATABASE_REQUIRE_SECURE_TRANSPORT: false
+  DATABASE_SSLKEY_PATH: "/home/dbcerts/tls.key"
+  DATABASE_SSLCERT_PATH: "/home/dbcerts/tls.crt"
+  DATABASE_SSLROOTCERT_PATH: "/home/dbcerts/root.crt"
+  AUTH_VERIFY_SSL: false
+  LOG_LEVEL: "INFO"
+  DOCUMENTATION_ENABLED: "true"
+  RABBITMQ_TLS_ENABLED: false
+
+  KAFKA_GROUP_ID: ai-fusion
+  KAFKA_AUTO_OFFSET_RESET: earliest
+  KAFKA_SECURITY_ENABLED: false
+
+  # Azure Service Bus
+  ASB_SUBSCRIPTION_STRATEGY: "no_preparation"
+
+  SUPPORTED_PROVIDERS: '["dial", "azure", "google", "aws-bedrock"]'
+
+  DOCUMENT_SERVICE_URL: http://backend:8000
+  FILE_SERVICE_URL: http://file:8000
+  PARSING_SERVICE_URL: http://parsing:8000
+  EXTRACTION_URL: http://extraction:8000
+  FILE_STORAGE_URL: http://file-storage:8004
+  META_AGENT_URL: http://meta-agent:8000
+  AGENTIC_AI_URL: http://agentic-ai:8000
+  GENAI_QUERY_AGENT_URL: http://ai-fusion-agent:8000
+  UNIFIER_URL: http://unifier:8000
+
+  EPAM_DIAL_ENDPOINT: https://host_azure_api_endpoint
+  EPAM_DIAL_API_VERSION: "2025-04-01-preview"
+
+  AZURE_API_ENDPOINT: https://host_azure_api_endpoint
+  AZURE_API_VERSION: "2025-04-01-preview"
+
+  DEFAULT_MAX_FIELDS_PER_REQUEST: 3
+
+  AWS_BEDROCK_MAX_TOKENS: "3000"
+
+  AGENT_PROVIDER_ID: "dial"
+  AGENT_MODEL_ID: "gpt-4o"
+
+  # Telemetry
+  INSTRUMENTATION_ENABLED: false
+  SERVICE_NAME: deps-ai-fusion
+  EXPORTER_TYPE: azure
+
+  LLM_COORDINATES_ENABLED: "false"
+
+  LLMS_CONFIG: |-
+    {
+        "providers": {
+            "azure": {
+                "plain_layout_application": [
+                    {
+                        "name": "GPT-4 Mini",
+                        "code": "openai.gpt-4-omni-mini-text",
+                        "context_type": "text-based",
+                        "vendor_code_regex": "(?i)^(?=.*gpt)(?=.*4o)(?=.*mini).*",
+                        "description": "Uses OpenAI GPT-4 Omni Mini model. Provide fast and cheap answers if compared to GPT-4. Answers based on document layout"
+                    },
+                    {
+                        "name": "GPT-4",
+                        "code": "openai.gpt-4-omni-text",
+                        "context_type": "text-based",
+                        "vendor_code_regex": "(?i)^(?=.*gpt)(?=.*4o)(?!.*mini).*",
+                        "description": "Uses OpenAI advanced GPT-4 Omni model, to provide high-quality answers based on the provided document. Has a large 128k context window, better quality, but higher price, in comparison with GPT-4 Mini. Answers based on document layout"
+                    }
+                ]
+            },
+            "dial": {
+                "plain_blob_application": [
+                    {
+                        "name": "Dial-RAG",
+                        "code": "epam.dial-rag",
+                        "context_type": "blob-based",
+                        "vendor_code_regex": "(?i)^(?=.*dial)(?=.*rag).*",
+                        "description": "EPAM's RAG Application that provide citation-based answers based on provided document. Supports the following formats: PDF (with vector layer), DOC/DOCX, PPT/PPTX, plain text files."
+                    },
+                    {
+                        "name": "GPT-4 Images",
+                        "code": "openai.gpt-4-omni",
+                        "context_type": "blob-based",
+                        "vendor_code_regex": "(?i)^(?=.*gpt)(?=.*4o)(?!.*mini).*",
+                        "description": "Advanced model uses GPT-4 Omni to analyze images content and has high cost. Can detect objects, describe scenes, and generate text based on the image content. Supports the following formats: PNG, JPG/JPEG, GIF."
+                    }
+                ],
+                "plain_layout_application": [
+                    {
+                        "name": "GPT-4 Mini",
+                        "code": "openai.gpt-4-omni-mini-text",
+                        "context_type": "text-based",
+                        "vendor_code_regex": "(?i)^(?=.*gpt)(?=.*4o)(?=.*mini).*",
+                        "description": "Uses OpenAI GPT-4 Omni Mini model. Provide fast and cheap answers if compared to GPT-4. Answers based on document layout"
+                    },
+                    {
+                        "name": "GPT-4",
+                        "code": "openai.gpt-4-omni-text",
+                        "context_type": "text-based",
+                        "vendor_code_regex": "(?i)^(?=.*gpt)(?=.*4o)(?!.*mini).*",
+                        "description": "Uses OpenAI advanced GPT-4 Omni model, to provide high-quality answers based on the provided document. Has a large 128k context window, better quality, but higher price, in comparison with GPT-4 Mini. Answers based on document layout"
+                    }
+                ]
+            },
+            "google": {
+                "file_based_agentic_application": [
+                    {
+                        "name": "Gemini File-Based Agent",
+                        "code": "google.gemini-2-flash-file-based-agent",
+                        "context_type": "text-based",
+                        "vendor_code_regex": "(?i)^(?=.*gemini)(?=.*2\\.0)(?=.*flash)(?!.*thinking)(?!.*exp)(?!.*lite).*",
+                        "description": "This agent leverages Gemini 2.0 Flash to analyze original document files directly, without relying on Parsing. Agent doesn't maintain conversational history as well. It supports task-specific queries on uploaded documents, utilizing Gemini's native multimodal capabilities. Supports PDF, PNG, JPEG, TIF, DOCX file formats."
+                    }
+                ],
+                "plain_layout_application": [
+                    {
+                        "name": "Gemini 2.5",
+                        "code": "google.gemini-2.5-text",
+                        "context_type": "text-based",
+                        "vendor_code_regex": "(?i)^(?=.*gemini)(?=.*2\\.5-pro)(?!.*thinking)(?!.*exp)(?!.*lite)(?!.*tts).*",
+                        "description": "Uses Google's Gemini 2.5 Pro model, delivering higher reasoning quality and better document understanding. Supports a 1M token context window, ideal for complex document-based answering. Offers improved accuracy and nuanced responses, at a higher cost compared to Gemini Flash"
+                    }
+                ],
+                "multimodal_application": [
+                   {
+                        "name": "Gemini 2 Flash Multimodal",
+                        "code": "google.gemini-2-flash-multimodal",
+                        "context_type": "multimodal",
+                        "vendor_code_regex": "(?i)^(?=.*gemini)(?=.*2\\.0)(?=.*flash)(?!.*thinking)(?!.*exp)(?!.*lite).*",
+                        "description": "Uses Google's Gemini 2 Flash model with multimodal capabilities to analyze document layout that can be enriched with files for improved contextual understanding. Supports PDF, PNG, JPEG, TIF, DOCX file formats."
+                    }
+                ]
+            },
+            "openai": {
+                "plain_layout_application": [
+                    {
+                        "name": "GPT-4 Mini",
+                        "code": "openai.gpt-4-omni-mini-text",
+                        "context_type": "text-based",
+                        "vendor_code_regex": "(?i)^(?=.*gpt)(?=.*4o)(?=.*mini).*",
+                        "description": "Uses OpenAI GPT-4 Omni Mini model. Provide fast and cheap answers if compared to GPT-4. Answers based on document layout"
+                    },
+                    {
+                        "name": "GPT-4",
+                        "code": "openai.gpt-4-omni-text",
+                        "context_type": "text-based",
+                        "vendor_code_regex": "(?i)^(?=.*gpt)(?=.*4o)(?!.*mini).*",
+                        "description": "Uses OpenAI advanced GPT-4 Omni model, to provide high-quality answers based on the provided document. Has a large 128k context window, better quality, but higher price, in comparison with GPT-4 Mini. Answers based on document layout"
+                    }
+                ]
+            },
+            "aws-bedrock": {
+                "plain_layout_application": [
+                    {
+                        "name": "Amazon Nova Pro",
+                        "code": "amazon.nova-pro-text",
+                        "context_type": "text-based",
+                        "vendor_code_regex": "(?i)^(?=.*amazon)(?=.*nova)(?=.*pro).*",
+                        "description": "Amazon's advanced model with a large context window, designed for high-quality document-based answering. It offers improved accuracy and nuanced responses, but at a higher cost compared to other models. Answers based on document layout."
+                    },
+                    {
+                        "name": "Claude 4",
+                        "code": "anthropic.claude-4-text",
+                        "context_type": "text-based",
+                        "vendor_code_regex": "(?i)^us\\.(?=.*anthropic)(?=.*claude-sonnet-4).*",
+                        "description": "Anthropic's Claude 4 model with text-based capabilities using Document Layout. Claude Opus 4 excels at coding, with sustained performance on complex, long-running tasks and agent workflows."
+                    }
+                ],
+                "plain_blob_application": [
+                    {
+                        "name": "Claude 3.7 Images",
+                        "code": "anthropic.claude-images",
+                        "context_type": "blob-based",
+                        "vendor_code_regex": "(?i)^us\\.(?=.*anthropic)(?=.*claude-3-7-sonnet).*",
+                        "description": "Anthropic's Claude 3.7 Sonnet model with multimodal capabilities. Supports image-based document analysis (png, jpeg, ...). Designed for advanced reasoning and nuanced responses based on image input."
+                    }
+                ],
+                "multimodal_application": [
+                    {
+                        "name": "Claude 3.7 Multimodal",
+                        "code": "anthropic.claude-multimodal",
+                        "context_type": "multimodal",
+                        "vendor_code_regex": "(?i)^us\\.(?=.*anthropic)(?=.*claude-3-7-sonnet).*",
+                        "description": "Anthropic's Claude 3.7 Sonnet model with multimodal capabilities. Uses document layout that can be enriched with files (png, jpeg, ...) for improved contextual understanding."
+                    }
+                ]
+            }
+        }
+    }
+
+helm:
+  helm_logs_job_enabled: false
+
+message_broker_asb_without_manage_permission:
+  enabled: false
+
+csi:
+  csi_default_name: deps-ai-fusion
+  vault_namespace: "k8s-dev"
+  roleName: "k8s-dev"
+  vaultKubernetesMountPath: "kubernetes-dev"
+
+secrets_location:
+  secrets_default_path: "/mnt/secrets-store"
+
+service_account:
+  serviceAccountName: "deps-develop"
+
+secret_project_id:
+  id: ""
+
+azure_kv_settings:
+  keyvaultName: ""
+  tenantId: ""
+  userAssignedIdentityID: ""
+  resourceGroup: ""
+  subscriptionId: ""
+
+vault_settings:
+  enabled: false
+  hashicorp_vault: false
+  azure_key_vault: false
+  gcp_secret_manager: false
+  aws_secret_manager: false
+  aws_secret_manager_region: ""
+
+ai_fusion_vault_enabled:
+  env:
+    - name: AUTH_CERTS_ENDPOINT
+      valueFrom:
+        secretKeyRef:
+          name: deps-ai-fusion
+          key: keycloak-certs-endpoint
+    - name: MESSAGING_DRIVER
+      valueFrom:
+        secretKeyRef:
+          name: deps-ai-fusion
+          key: message-broker-driver
+    - name: MESSAGE_BROKER_CONNECTION_STRING
+      valueFrom:
+        secretKeyRef:
+          name: deps-ai-fusion
+          key: message-broker-connection-string
+    - name: DATABASE_HOST
+      valueFrom:
+        secretKeyRef:
+          name: deps-ai-fusion
+          key: database-host
+    - name: DATABASE_DB
+      valueFrom:
+        secretKeyRef:
+          name: deps-ai-fusion
+          key: database-db
+    - name: DATABASE_USER
+      valueFrom:
+        secretKeyRef:
+          name: deps-ai-fusion
+          key: user
+    - name: DATABASE_PASSWORD
+      valueFrom:
+        secretKeyRef:
+          name: deps-ai-fusion
+          key: password
+    - name: EPAM_DIAL_API_KEY
+      valueFrom:
+        secretKeyRef:
+          name: deps-ai-fusion
+          key: epam-dial-api-key
+    - name: AZURE_API_KEY
+      valueFrom:
+        secretKeyRef:
+          name: deps-ai-fusion
+          key: azure-api-key
+    - name: OPENAI_API_KEY
+      valueFrom:
+        secretKeyRef:
+          name: deps-ai-fusion
+          key: openai-api-key
+    - name: GOOGLE_API_KEY
+      valueFrom:
+        secretKeyRef:
+          name: deps-ai-fusion
+          key: google-api-key
+    - name: AWS_BEDROCK_SECRET_ACCESS_KEY
+      valueFrom:
+        secretKeyRef:
+          name: deps-ai-fusion
+          key: aws-bedrock-api-key
+    - name: AWS_BEDROCK_ACCESS_KEY_ID
+      valueFrom:
+        secretKeyRef:
+          name: deps-ai-fusion
+          key: aws-bedrock-access-key-id
+    - name: AWS_BEDROCK_REGION
+      valueFrom:
+        secretKeyRef:
+          name: deps-ai-fusion
+          key: aws-bedrock-region
+
+ai_fusion_vault_disabled:
+  env:
+    - name: AUTH_CERTS_ENDPOINT
+      valueFrom:
+        secretKeyRef:
+          name: keycloak-certs-endpoint
+          key: keycloak-certs-endpoint
+    - name: MESSAGING_DRIVER
+      valueFrom:
+        secretKeyRef:
+          name: common-secret
+          key: message-broker-driver
+    - name: MESSAGE_BROKER_CONNECTION_STRING
+      valueFrom:
+        secretKeyRef:
+          name: common-secret
+          key: message-broker-connection-string
+    - name: DATABASE_HOST
+      valueFrom:
+        secretKeyRef:
+          name: common-secret
+          key: database-host
+    - name: DATABASE_DB
+      valueFrom:
+        secretKeyRef:
+          name: ai-fusion-database
+          key: database-db
+    - name: DATABASE_USER
+      valueFrom:
+        secretKeyRef:
+          name: ai-fusion-database
+          key: user
+    - name: DATABASE_PASSWORD
+      valueFrom:
+        secretKeyRef:
+          name: ai-fusion-database
+          key: password
+    - name: EPAM_DIAL_API_KEY
+      valueFrom:
+        secretKeyRef:
+          name: ai-fusion-providers
+          key: epam-dial-api-key
+    - name: AZURE_API_KEY
+      valueFrom:
+        secretKeyRef:
+          name: ai-fusion-providers
+          key: azure-api-key
+    - name: OPENAI_API_KEY
+      valueFrom:
+        secretKeyRef:
+          name: ai-fusion-providers
+          key: openai-api-key
+    - name: GOOGLE_API_KEY
+      valueFrom:
+        secretKeyRef:
+          name: ai-fusion-providers
+          key: google-api-key
+    - name: AWS_BEDROCK_SECRET_ACCESS_KEY
+      valueFrom:
+        secretKeyRef:
+          name: ai-fusion-providers
+          key: aws-bedrock-api-key
+    - name: AWS_BEDROCK_ACCESS_KEY_ID
+      valueFrom:
+        secretKeyRef:
+          name: ai-fusion-providers
+          key: aws-bedrock-access-key-id
+    - name: AWS_BEDROCK_REGION
+      valueFrom:
+        secretKeyRef:
+          name: ai-fusion-providers
+          key: aws-bedrock-region
+
+ai_fusion_consumer_vault_enabled:
+  env:
+    - name: SECRET_KEY
+      valueFrom:
+        secretKeyRef:
+          name: deps-ai-fusion
+          key: app-secret-key
+    - name: AUTH_CERTS_ENDPOINT
+      valueFrom:
+        secretKeyRef:
+          name: deps-ai-fusion
+          key: keycloak-certs-endpoint
+    - name: MESSAGING_DRIVER
+      valueFrom:
+        secretKeyRef:
+          name: deps-ai-fusion
+          key: message-broker-driver
+    - name: MESSAGE_BROKER_CONNECTION_STRING
+      valueFrom:
+        secretKeyRef:
+          name: deps-ai-fusion
+          key: message-broker-connection-string
+    - name: DATABASE_HOST
+      valueFrom:
+        secretKeyRef:
+          name: deps-ai-fusion
+          key: database-host
+    - name: DATABASE_DB
+      valueFrom:
+        secretKeyRef:
+          name: deps-ai-fusion
+          key: database-db
+    - name: DATABASE_USER
+      valueFrom:
+        secretKeyRef:
+          name: deps-ai-fusion
+          key: user
+    - name: DATABASE_PASSWORD
+      valueFrom:
+        secretKeyRef:
+          name: deps-ai-fusion
+          key: password
+    - name: EPAM_DIAL_API_KEY
+      valueFrom:
+        secretKeyRef:
+          name: deps-ai-fusion
+          key: epam-dial-api-key
+    - name: AZURE_API_KEY
+      valueFrom:
+        secretKeyRef:
+          name: deps-ai-fusion
+          key: azure-api-key
+    - name: OPENAI_API_KEY
+      valueFrom:
+        secretKeyRef:
+          name: deps-ai-fusion
+          key: openai-api-key
+    - name: GOOGLE_API_KEY
+      valueFrom:
+        secretKeyRef:
+          name: deps-ai-fusion
+          key: google-api-key
+    - name: AWS_BEDROCK_SECRET_ACCESS_KEY
+      valueFrom:
+        secretKeyRef:
+          name: deps-ai-fusion
+          key: aws-bedrock-api-key
+    - name: AWS_BEDROCK_ACCESS_KEY_ID
+      valueFrom:
+        secretKeyRef:
+          name: deps-ai-fusion
+          key: aws-bedrock-access-key-id
+    - name: AWS_BEDROCK_REGION
+      valueFrom:
+        secretKeyRef:
+          name: deps-ai-fusion
+          key: aws-bedrock-region
+
+ai_fusion_consumer_vault_disabled:
+  env:
+    - name: SECRET_KEY
+      valueFrom:
+        secretKeyRef:
+          name: app-secret-key
+          key: app-secret-key
+    - name: AUTH_CERTS_ENDPOINT
+      valueFrom:
+        secretKeyRef:
+          name: keycloak-certs-endpoint
+          key: keycloak-certs-endpoint
+    - name: MESSAGING_DRIVER
+      valueFrom:
+        secretKeyRef:
+          name: common-secret
+          key: message-broker-driver
+    - name: MESSAGE_BROKER_CONNECTION_STRING
+      valueFrom:
+        secretKeyRef:
+          name: common-secret
+          key: message-broker-connection-string
+    - name: DATABASE_HOST
+      valueFrom:
+        secretKeyRef:
+          name: common-secret
+          key: database-host
+    - name: DATABASE_DB
+      valueFrom:
+        secretKeyRef:
+          name: ai-fusion-database
+          key: database-db
+    - name: DATABASE_USER
+      valueFrom:
+        secretKeyRef:
+          name: ai-fusion-database
+          key: user
+    - name: DATABASE_PASSWORD
+      valueFrom:
+        secretKeyRef:
+          name: ai-fusion-database
+          key: password
+    - name: EPAM_DIAL_API_KEY
+      valueFrom:
+        secretKeyRef:
+          name: ai-fusion-providers
+          key: epam-dial-api-key
+    - name: AZURE_API_KEY
+      valueFrom:
+        secretKeyRef:
+          name: ai-fusion-providers
+          key: azure-api-key
+    - name: OPENAI_API_KEY
+      valueFrom:
+        secretKeyRef:
+          name: ai-fusion-providers
+          key: openai-api-key
+    - name: GOOGLE_API_KEY
+      valueFrom:
+        secretKeyRef:
+          name: ai-fusion-providers
+          key: google-api-key
+    - name: AWS_BEDROCK_SECRET_ACCESS_KEY
+      valueFrom:
+        secretKeyRef:
+          name: ai-fusion-providers
+          key: aws-bedrock-api-key
+    - name: AWS_BEDROCK_ACCESS_KEY_ID
+      valueFrom:
+        secretKeyRef:
+          name: ai-fusion-providers
+          key: aws-bedrock-access-key-id
+    - name: AWS_BEDROCK_REGION
+      valueFrom:
+        secretKeyRef:
+          name: ai-fusion-providers
+          key: aws-bedrock-region

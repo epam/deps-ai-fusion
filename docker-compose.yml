@@ -1,0 +1,19 @@
+services:
+  api:
+    image: "ai-fusion-dev"
+    container_name: "deps-ai-fusion"
+    command: python -m deps_ai_fusion serve
+
+  consumer:
+    image: "ai-fusion-dev"
+    container_name: "deps-ai-fusion-consumer"
+    command: python -m deps_ai_fusion dispatch
+
+  agent:
+    image: "ai-fusion-dev"
+    container_name: "deps-ai-fusion-agent"
+    command: python -m deps_ai_fusion agent
+
+  migrator:
+    image: "ai-fusion-migrator"
+    container_name: deps-ai-fusion-migrator

@@ -1,0 +1,188 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: ai-fusion-consumer
+  labels:
+    {{- include "deps-ai-fusion.labels" . | nindent 4 }}
+    app.kubernetes.io/component: ai-fusion-consumer
+spec:
+  replicas: {{ .Values.ai_fusion_consumer.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "deps-ai-fusion.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: ai-fusion-consumer
+  template:
+    metadata:
+      annotations:
+        {{- with .Values.podAnnotations }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      labels:
+        {{- include "deps-ai-fusion.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: ai-fusion-consumer
+    spec:
+      {{- if .Values.ai_fusion_consumer.imagePullSecrets }}
+      imagePullSecrets:
+        - name: {{ .Values.ai_fusion_consumer.imagePullSecrets }}
+      {{- end }}
+      {{- if .Values.podSecurityContext.runAsNonRoot }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      {{- end }}
+      {{- if or .Values.vault_settings.hashicorp_vault .Values.vault_settings.gcp_secret_manager .Values.vault_settings.aws_secret_manager }}
+      serviceAccountName: {{ .Values.service_account.serviceAccountName }}
+      {{- end }}
+      {{- if .Values.ai_fusion_settings.DATABASE_REQUIRE_SECURE_TRANSPORT }}
+      initContainers:
+        - name: init-{{ .Chart.Name }}
+          image: busybox
+          command: ["sh", "-c", "cp /home/inputdbcerts/* /home/outputdbcerts/ && chmod g-r /home/outputdbcerts/*.key"]
+          volumeMounts:
+            - name: tls-database-certs
+              mountPath: /home/inputdbcerts
+            - name: outputdbcerts
+              mountPath: /home/outputdbcerts
+      {{- end }}
+      containers:
+        - name: {{ .Chart.Name }}
+          image: '{{ .Values.registry }}{{ .Values.ai_fusion_consumer.image.path }}:{{ .Values.ai_fusion_consumer.image.tag | default "latest" }}'
+          imagePullPolicy: {{ .Values.ai_fusion_consumer.image.pullPolicy }}
+          command: ["python", "-m", "deps_ai_fusion", "dispatch"] # "consume" or "dispatch"?
+          envFrom:
+          - configMapRef:
+              name: ai-fusion-configmap
+              optional: false
+          resources:
+            {{- toYaml .Values.ai_fusion_consumer.resources | nindent 12 }}
+          env:
+          {{ if .Values.ai_fusion_settings.INSTRUMENTATION_ENABLED }}
+          {{ if eq .Values.ai_fusion_settings.EXPORTER_TYPE "azure" }}
+          - name: APPLICATION_INSIGHTS_CONNECTION_STRING
+            valueFrom:
+              secretKeyRef:
+                name: {{ .Values.secrets.telemetry_secrets.secretName }}
+                key: application-insights-connection-string
+          {{ end }}
+          {{ end }}
+          {{- if .Values.vault_settings.enabled }}
+          {{- toYaml .Values.ai_fusion_consumer_vault_enabled.env | nindent 10 }}
+          {{ if .Values.ai_fusion_settings.RABBITMQ_TLS_ENABLED }}
+          - name: RABBITMQ_TLS_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: deps-ai-fusion
+                key: rabbitmq-password
+          {{ end }}
+          {{ if .Values.ai_fusion_settings.KAFKA_SECURITY_ENABLED }}
+          - name: KAFKA_SASL_USERNAME
+            valueFrom:
+              secretKeyRef:
+                name: deps-ai-fusion
+                key: kafka-sasl-username
+          - name: KAFKA_SASL_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: deps-ai-fusion
+                key: kafka-sasl-password
+          {{ end }}
+          {{- else }}
+          {{- toYaml .Values.ai_fusion_consumer_vault_disabled.env | nindent 10 }}
+          {{ if .Values.ai_fusion_settings.RABBITMQ_TLS_ENABLED }}
+          - name: RABBITMQ_TLS_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: rabbitmq-password
+                key: rabbitmq-password
+          {{ end }}
+          {{ if .Values.ai_fusion_settings.KAFKA_SECURITY_ENABLED }}
+          - name: KAFKA_SASL_USERNAME
+            valueFrom:
+              secretKeyRef:
+                name: kafka-secrets
+                key: kafka-sasl-username
+          - name: KAFKA_SASL_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: kafka-secrets
+                key: kafka-sasl-password
+          {{ end }}
+          {{- end }}
+          readinessProbe:
+            exec:
+              command:
+                - "bash"
+                - "-c"
+                - |
+                  echo > /dev/tcp/$DATABASE_HOST/$DATABASE_PORT && echo "PostgreSQL connected" || { echo "PostgreSQL not connected"; exit 1; }
+
+                  if [ "$MESSAGING_DRIVER" == "rabbitmq" ]; then
+                    echo > /dev/tcp/$MESSAGING_DRIVER/5672 && echo "RabbitMQ connected" || { echo "RabbitMQ not connected"; exit 1; }
+                  fi
+
+                  if [ "$MESSAGING_DRIVER" == "kafka" ]; then
+                    echo > /dev/tcp/$(echo "$MESSAGE_BROKER_CONNECTION_STRING" | cut -d':' -f1)/$(echo "$MESSAGE_BROKER_CONNECTION_STRING" | cut -d':' -f2) && echo "Kafka connected" || { echo "Kafka not connected"; exit 1; }
+                  fi
+            initialDelaySeconds: 30
+            periodSeconds: 30
+            failureThreshold: 14
+          volumeMounts:
+          {{- if or .Values.ai_fusion_settings.RABBITMQ_TLS_ENABLED .Values.ai_fusion_settings.DATABASE_REQUIRE_SECURE_TRANSPORT }}
+            {{ if .Values.ai_fusion_settings.RABBITMQ_TLS_ENABLED }}
+            - name: security-certs
+              mountPath: {{ .Values.certs_location.certs_default_path }}
+              readOnly: true
+            {{ end }}
+            {{- if .Values.ai_fusion_settings.DATABASE_REQUIRE_SECURE_TRANSPORT }}
+            - name: outputdbcerts
+              mountPath: {{ .Values.certs_location.database_sslcerts_path }}
+            {{ end }}
+          {{- end }}
+          {{- if .Values.vault_settings.enabled }}
+            - name: secrets-store-inline
+              mountPath: {{ .Values.secrets_location.secrets_default_path }}
+              readOnly: true
+          {{- end }}
+      volumes:
+      {{- if or .Values.ai_fusion_settings.RABBITMQ_TLS_ENABLED .Values.ai_fusion_settings.DATABASE_REQUIRE_SECURE_TRANSPORT }}
+        {{ if .Values.ai_fusion_settings.RABBITMQ_TLS_ENABLED }}
+        - name: security-certs
+          secret:
+            secretName: {{ .Values.secrets.security_certs.secretName }}
+        {{ end }}
+        {{ if .Values.ai_fusion_settings.DATABASE_REQUIRE_SECURE_TRANSPORT }}
+        - name: tls-database-certs
+          secret:
+            secretName: {{ .Values.secrets.database_ssl_secret.secretName }}
+            items:
+            - key: tls.crt
+              path: tls.crt
+            - key: tls.key
+              path: tls.key
+              mode: 0600
+            - key: root.crt
+              path: root.crt
+            defaultMode: 0644
+        - name: outputdbcerts
+          emptyDir: {}
+        {{ end }}
+      {{- end }}
+      {{- if .Values.vault_settings.enabled }}
+        - name: secrets-store-inline
+          csi:
+            driver: secrets-store.csi.k8s.io
+            readOnly: true
+            volumeAttributes:
+              secretProviderClass: {{ .Values.csi.csi_default_name }}
+      {{- end }}
+      {{- with .Values.ai_fusion_consumer.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.ai_fusion_consumer.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.ai_fusion_consumer.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
