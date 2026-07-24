@@ -107,7 +107,7 @@ psutil==7.2.1
 psycopg==3.3.2
 psycopg-pool==3.3.0
 psycopg2-binary==2.9.11
-pyasn1==0.6.2
+pyasn1==0.6.4
 pyasn1_modules==0.4.2
 pycodestyle==2.14.0
 pycparser==3.0
